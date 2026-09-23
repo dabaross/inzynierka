@@ -1,0 +1,22 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.1.2-alpine
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: wifi
+      POSTGRES_PASSWORD: wifi
+      POSTGRES_DB: wifi_ai_analyzer_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+    pg_data:
