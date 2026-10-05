@@ -1,0 +1,28 @@
+menu "Konfiguracja skanera Wi-Fi"
+
+    config WIFI_SSID
+        string "SSID sieci używanej do wysyłania danych"
+        default ""
+
+    config WIFI_PASSWORD
+        string "Hasło sieci Wi-Fi"
+        default ""
+
+    config MQTT_BROKER_URI
+        string "Adres brokera MQTT"
+        default "mqtt://192.168.1.96:1883"
+
+    config MQTT_SCAN_TOPIC
+        string "Temat MQTT dla skanów"
+        default "wifi/scan"
+
+    config SENSOR_ID
+        string "Identyfikator sensora"
+        default "esp32-01"
+
+    config EXAMPLE_SCAN_LIST_SIZE
+        int "Maksymalna liczba BSS w jednym skanie"
+        range 1 50
+        default 20
+
+endmenu

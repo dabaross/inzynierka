@@ -1,0 +1,2 @@
+# Shared defaults; configure device-specific values using idf.py menuconfig.
+CONFIG_IDF_TARGET="esp32"

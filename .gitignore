@@ -1,0 +1,36 @@
+# ESP-IDF generated files and device-local configuration
+build/
+managed_components/
+sdkconfig
+sdkconfig.old
+
+# Java / Maven
+target/
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local backups and exported project archives
+backups/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# MQTT persistence and runtime files
+*.lck
+*.msg
+*.msg.bup
+wifi-ai-analyzer-backend-*/
+*.log
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
