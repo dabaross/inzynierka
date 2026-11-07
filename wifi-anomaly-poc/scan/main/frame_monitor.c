@@ -57,7 +57,7 @@ static void receive_frame(void *buffer, wifi_promiscuous_pkt_type_t type)
 
     const wifi_promiscuous_pkt_t *packet = buffer;
     const uint8_t *frame = packet->payload;
-    if (packet->rx_ctrl.rx_state != 0 || packet->rx_ctrl.sig_len < 28
+    if (packet->rx_ctrl.rx_state != 0 || packet->rx_ctrl.sig_len < 24
         || memcmp(&frame[16], target_bssid, sizeof(target_bssid)) != 0) {
         return;
     }

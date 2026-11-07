@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monitor ramek Wi-Fi</title>
+  <link rel="stylesheet" href="monitor.css">
+  <script src="monitor.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">IEEE 802.11 · Pasmo 2,4 GHz</p>
+      <h1>Monitor ramek Wi-Fi</h1>
+      <p>Obserwacja ramek deauthentication i disassociation w oknach po 5 sekund.</p>
+    </header>
+    <section class="controls" aria-label="Pomiar">
+      <label for="stream">Sensor, BSSID i kanał</label>
+      <div class="actions">
+        <select id="stream"></select>
+        <button id="calibrate" disabled>Ucz na ostatnich 30 oknach</button>
+        <button id="export" disabled>Pobierz CSV</button>
+      </div>
+      <p id="status" role="status">Oczekiwanie na dane…</p>
+    </section>
+    <section class="summary" aria-label="Ostatni pomiar">
+      <div><span>Deauth / 5 s</span><strong id="deauth">–</strong></div>
+      <div><span>Disassoc / 5 s</span><strong id="disassoc">–</strong></div>
+      <div><span>Próg liczby ramek</span><strong id="threshold">–</strong></div>
+      <div><span>Wynik kNN</span><strong id="model">–</strong></div>
+    </section>
+    <section class="chart">
+      <h2>Ramki w ostatnich oknach</h2>
+      <p><span class="legend deauth">Deauth</span> <span class="legend disassoc">Disassoc</span></p>
+      <svg id="chart" viewBox="0 0 820 210" role="img" aria-label="Liczba ramek w kolejnych oknach"></svg>
+    </section>
+    <section>
+      <h2>Historia pomiarów</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Odbiór</th><th>Beacon</th><th>Deauth</th><th>Disassoc</th><th>Retry</th><th>Próg</th><th>kNN</th><th>Możliwa luka</th></tr>
+          </thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
