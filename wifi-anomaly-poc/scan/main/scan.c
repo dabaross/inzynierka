@@ -13,6 +13,7 @@
 #include "esp_wifi.h"
 #include "mqtt_client.h"
 #include "nvs_flash.h"
+#include "frame_monitor.h"
 
 #define DEFAULT_SCAN_LIST_SIZE CONFIG_EXAMPLE_SCAN_LIST_SIZE
 #define WIFI_MAX_RETRIES 5
@@ -21,6 +22,7 @@ static const char *TAG = "wifi_scan";
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static bool mqtt_started = false;
+#ifndef CONFIG_FRAME_MONITOR
 static unsigned int wifi_retry_count = 0;
 
 /*
@@ -130,6 +132,8 @@ static void publish_pending_scan(esp_mqtt_client_handle_t client)
              CONFIG_MQTT_SCAN_TOPIC, message_id);
 }
 
+#endif
+
 static void mqtt_event_handler(void *arg,
                                esp_event_base_t event_base,
                                int32_t event_id,
@@ -143,10 +147,15 @@ static void mqtt_event_handler(void *arg,
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "Połączono z brokerem MQTT");
+#ifdef CONFIG_FRAME_MONITOR
+        frame_monitor_set_mqtt_client(event->client);
+#else
         publish_pending_scan(event->client);
+#endif
         break;
 
     case MQTT_EVENT_PUBLISHED:
+#ifndef CONFIG_FRAME_MONITOR
         ESP_LOGI(TAG, "Broker potwierdził publikację, id: %d", event->msg_id);
 
         if (event->msg_id == pending_publish_id) {
@@ -155,9 +164,13 @@ static void mqtt_event_handler(void *arg,
             pending_publish_id = -1;
             ESP_LOGI(TAG, "Skan dostarczony do brokera i usunięty z RAM");
         }
+#endif
         break;
 
     case MQTT_EVENT_DISCONNECTED:
+#ifdef CONFIG_FRAME_MONITOR
+        frame_monitor_set_mqtt_client(NULL);
+#endif
         ESP_LOGW(TAG, "Rozłączono z brokerem MQTT");
         break;
 
@@ -178,6 +191,9 @@ static void mqtt_start(void)
 
     const esp_mqtt_client_config_t mqtt_config = {
         .broker.address.uri = CONFIG_MQTT_BROKER_URI,
+#ifdef CONFIG_FRAME_MONITOR
+        .outbox.limit = 8192,
+#endif
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
@@ -199,10 +215,20 @@ static void wifi_event_handler(void *arg,
 {
     (void)arg;
 
+#ifdef CONFIG_FRAME_MONITOR
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        const wifi_event_sta_connected_t *event = event_data;
+        frame_monitor_set_channel(event->channel);
+    }
+#endif
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         const wifi_event_sta_disconnected_t *event = event_data;
         ESP_LOGW(TAG, "Rozłączono z Wi-Fi, kod przyczyny: %u", event->reason);
 
+#ifdef CONFIG_FRAME_MONITOR
+        frame_monitor_set_channel(0);
+        ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_connect());
+#else
         if (wifi_retry_count < WIFI_MAX_RETRIES) {
             ++wifi_retry_count;
             ESP_LOGI(TAG, "Ponowna próba połączenia: %u/%u",
@@ -211,9 +237,12 @@ static void wifi_event_handler(void *arg,
         } else {
             ESP_LOGE(TAG, "Przekroczono limit prób połączenia z Wi-Fi");
         }
+#endif
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         const ip_event_got_ip_t *event = event_data;
+#ifndef CONFIG_FRAME_MONITOR
         wifi_retry_count = 0;
+#endif
 
         ESP_LOGI(TAG, "Połączono z Wi-Fi. Adres IP: " IPSTR,
                  IP2STR(&event->ip_info.ip));
@@ -221,7 +250,7 @@ static void wifi_event_handler(void *arg,
     }
 }
 
-static void wifi_scan_and_connect(void)
+static void start_wifi(void)
 {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -234,12 +263,17 @@ static void wifi_scan_and_connect(void)
 
     ESP_ERROR_CHECK(esp_event_handler_register(
         WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, wifi_event_handler, NULL));
+#ifdef CONFIG_FRAME_MONITOR
+    ESP_ERROR_CHECK(esp_event_handler_register(
+        WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, wifi_event_handler, NULL));
+#endif
     ESP_ERROR_CHECK(esp_event_handler_register(
         IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
+#ifndef CONFIG_FRAME_MONITOR
     wifi_scan_config_t scan_config = {
         .show_hidden = true,
     };
@@ -274,6 +308,8 @@ static void wifi_scan_and_connect(void)
 
     ESP_LOGI(TAG, "Przygotowany JSON: %s", pending_scan_json);
 
+#endif
+
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = CONFIG_WIFI_SSID,
@@ -282,6 +318,9 @@ static void wifi_scan_and_connect(void)
     };
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+#ifdef CONFIG_FRAME_MONITOR
+    frame_monitor_start();
+#endif
     ESP_LOGI(TAG, "Łączenie z siecią: %s", CONFIG_WIFI_SSID);
     ESP_ERROR_CHECK(esp_wifi_connect());
 }
@@ -297,5 +336,5 @@ void app_main(void)
     }
 
     ESP_ERROR_CHECK(result);
-    wifi_scan_and_connect();
+    start_wifi();
 }

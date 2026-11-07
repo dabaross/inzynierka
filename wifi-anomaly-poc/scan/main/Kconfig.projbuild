@@ -1,4 +1,4 @@
-menu "Konfiguracja skanera Wi-Fi"
+menu "Konfiguracja sensora Wi-Fi"
 
     config WIFI_SSID
         string "SSID sieci używanej do wysyłania danych"
@@ -20,7 +20,22 @@ menu "Konfiguracja skanera Wi-Fi"
         string "Identyfikator sensora"
         default "esp32-01"
 
+    config FRAME_MONITOR
+        bool "Monitoruj ramki zarządzające zamiast jednorazowego skanu"
+        default n
+
+    config MONITOR_BSSID
+        string "BSSID punktu dostępowego sieci testowej"
+        depends on FRAME_MONITOR
+        default ""
+
+    config MQTT_WINDOW_TOPIC
+        string "Temat MQTT dla okien pomiarowych"
+        depends on FRAME_MONITOR
+        default "wifi/window"
+
     config EXAMPLE_SCAN_LIST_SIZE
+        depends on !FRAME_MONITOR
         int "Maksymalna liczba BSS w jednym skanie"
         range 1 50
         default 20

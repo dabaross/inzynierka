@@ -1,6 +1,6 @@
-# ESP32: skan Wi-Fi wysyłany przez MQTT
+# ESP32: skan i monitor ramek Wi-Fi
 
-Komplet plików komponentu `main` dla ESP-IDF 6.x. Program:
+Komplet plików komponentu `main` dla ESP-IDF 6.x. W domyślnym trybie skanu program:
 
 1. inicjalizuje NVS i Wi-Fi,
 2. wykonuje jeden skan wszystkich kanałów,
@@ -19,7 +19,7 @@ ESP-IDF pobiera komponenty do ignorowanego katalogu `managed_components/`.
 idf.py menuconfig
 ```
 
-W menu `Konfiguracja skanera Wi-Fi` ustaw:
+W menu `Konfiguracja sensora Wi-Fi` ustaw:
 
 * SSID i hasło Wi-Fi,
 * URI brokera, np. `mqtt://192.168.1.96:1883`,
@@ -71,3 +71,17 @@ jeszcze zegara przez SNTP.
 W repozytorium znajduje się `sdkconfig.defaults` z domyślnym targetem ESP32;
 SSID i hasło ustaw przez `menuconfig`. Katalogi `build/` i
 `managed_components/` są odtwarzane przez ESP-IDF i nie są wersjonowane.
+
+## Monitor ramek zarządzających
+
+Ten sam firmware ma tryb monitorowania aktywowany w `idf.py menuconfig`.
+Włącz opcję **Monitoruj ramki zarządzające zamiast jednorazowego skanu**,
+wpisz BSSID punktu dostępowego sieci testowej i ustaw dane Wi-Fi oraz brokera.
+ESP32 łączy się z wybranym BSSID w trybie STA, żeby wysyłać wyniki.
+Jednocześnie odbiera ramki w trybie promiscuous na kanale tego połączenia.
+
+Co około 5 s sensor wysyła JSON w wersji 1 na `wifi/window` z QoS 1.
+Komunikat zawiera identyfikator okna, sensor, BSSID, kanał, czas trwania
+w milisekundach oraz liczniki `beacon`, `deauth`, `disassoc` i `retry`.
+`retry` obejmuje tylko deauth i disassoc z ustawionym bitem Retry.
+Po restarcie sensora lub utracie połączenia w historii może powstać luka.
